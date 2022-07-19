@@ -1,6 +1,8 @@
 #Sub-queries
 use sakila;
 
+SELECT * FROM sakila;
+
 #1 How many copies of the film Hunchback Impossible exist in the inventory system?
 
 SELECT COUNT(inventory_id) as number_of_copies, f.title 
@@ -92,6 +94,17 @@ SELECT COUNT(film_id), actor_id
 #7 Films rented by most profitable customer. You can use the customer table and payment
 # table to find the most profitable customer ie the customer that has made the largest sum of payments
 
+SELECT title AS films_rented_most_profitable_customer
+FROM sakila.film
+WHERE film_id IN(
+SELECT film_id FROM( 
+SELECT film_id FROM sakila.inventory i
+JOIN sakila.rental r USING(inventory_id)
+WHERE customer_id = (SELECT customer_id FROM (
+SELECT customer_id, SUM(amount) FROM sakila.payment
+GROUP BY customer_id
+ORDER BY SUM(amount) DESC
+LIMIT 1)sub1))sub2);
 
 #8 Customers who spent more than the average payments.
 
@@ -103,3 +116,37 @@ WHERE amount > (
 SELECT avg(amount)
 FROM payment p)
 ORDER BY amount DESC;
+
+
+#For Logistics Regression Lab
+#Get all the films that were rented in the month of May 2005 and all film data including film category
+#and storing them in films_data dataframe
+
+
+SELECT * 
+FROM sakila.rental r ;
+
+SELECT inventory_id
+WHERE rental_date IN
+(SELECT rental_date FROM rental WHERE rental_date BETWEEN '2005-05-01 00:00:00' AND '2005-05-31 23:23:59');
+
+
+SELECT CONCAT(first_name, ' ', last_name) as customer_name, store_id, email
+FROM sakila.customer
+WHERE customer_id IN 
+(SELECT customer_id FROM customer WHERE store_id =
+(SELECT store_id FROM sakila.store WHERE address_id = 1));
+
+
+SELECT f.film_id, f.title
+FROM sakila.film f
+WHERE film_id IN
+(SELECT film_id FROM sakila.inventory i WHERE rental_date =
+(SELECT rental_date FROM sakila.rental WHERE rental_date BETWEEN '2005-05-01 00:00:00' AND '2005-05-31 23:23:59'));
+
+SELECT f.title, f.film_id
+FROM sakila.film f
+WHERE film_id IN
+(SELECT film_id FROM sakila.inventory WHERE inventory_id =
+(SELECT inventory_id FROM sakila.rental WHERE rental_date BETWEEN '2005-05-01 00:00:00' AND '2005-05-31 23:23:59'))
+GROUP BY f.title, f.film_id;
